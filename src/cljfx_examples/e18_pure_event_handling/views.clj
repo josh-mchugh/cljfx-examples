@@ -12,7 +12,8 @@
                :text "Back"
                :disable (fx/sub-ctx context subs/history-empty?)}
               {:fx/type :text-field
-               :h-box/hgrow :always}]})
+               :h-box/hgrow :always
+               :text (fx/sub-val context :typed-url)}]})
 
 (defn root [_]
   {:fx/type :stage

@@ -1,5 +1,7 @@
 (ns cljfx-examples.e18-pure-event-handling
-  (:require [cljfx.api :as fx]
+  (:require [clj-http.client :as http]
+            [cljfx.api :as fx]
+            [cljfx-examples.e18-pure-event-handling.events :as events]
             [cljfx-examples.e18-pure-event-handling.views :as views]
             [clojure.core.cache :as cache]))
 
@@ -15,13 +17,39 @@
      :history []}
     cache/lru-cache-factory)))
 
+(defn http-effect [v dispatch]
+  (try
+    (http/request
+     (-> v
+         (assoc :async? true :as :byte-array)
+         (dissoc :on-response :on-exception))
+     (fn [response]
+       (prn response))
+     (fn [exception]
+       (prn exception)))
+    (catch Exception e
+      (prn e))))
+
+(def event-handler
+  (-> events/event-handler
+      (fx/wrap-co-effects
+       {:fx/context (fx/make-deref-co-effect *state)})
+      (fx/wrap-effects
+       {:context (fx/make-reset-effect *state)
+        :dispatch fx/dispatch-effect
+        :http http-effect})))
 
 (def renderer
   (fx/create-renderer
    :middleware (comp
                 fx/wrap-context-desc
                 (fx/wrap-map-desc (fn [_] {:fx/type views/root})))
-   :opts {:fx.opt/type->lifecycle #(or (fx/keyword->lifecycle %)
+   :opts {:fx.opt/map-event-handler event-handler
+          :fx.opt/type->lifecycle #(or (fx/keyword->lifecycle %)
                                        (fx/fn->lifecycle-with-context %))}))
+
+(event-handler
+ {:event/type ::events/open-url
+  :url "https://github.com/cljfx/cljfx"})
 
 (fx/mount-renderer *state renderer)
