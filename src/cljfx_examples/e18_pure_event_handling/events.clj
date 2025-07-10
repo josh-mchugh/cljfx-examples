@@ -9,6 +9,16 @@
 (defmethod event-handler :default [event]
   (prn event))
 
+(defmethod event-handler ::type-url [{:keys [fx/context fx/event]}]
+  {:context (fx/swap-context context assoc :typed-url event)})
+
+(defmethod event-handler ::key-press-url [{:keys [fx/context ^KeyEvent fx/event]}]
+  (let [current-url (:url (fx/sub-ctx context subs/current-response))
+        url (fx/sub-val context :typed-url)]
+    (when (and (= KeyCode/ENTER (.getCode event))
+               (not= url current-url))
+      {:dispatch {:event/type ::open-url :url url}})))
+
 (defmethod event-handler ::open-url [{:keys [fx/context url]}]
   (let [request-id (UUID/randomUUID)]
     {:context (fx/swap-context
