@@ -8,9 +8,19 @@
    :alignment :center
    :children [{:fx/type :progress-indicator}]})
 
+(defn- exception [{:keys [fx/context]}]
+  (let [{:keys [url exception]} (fx/sub-ctx context subs/current-response)]
+    {:fx/type :v-box
+     :alignment :center
+     :children [{:fx/type :label
+                 :text (str "Can't load url: " url)}
+                {:fx/type :label
+                 :text (or (ex-message exception) (str (class exception)))}]}))
+
 (defn current-page [{:keys [fx/context]}]
   (case (:result (fx/sub-ctx context subs/current-response))
     :pending {:fx/type loading}
+    :failure {:fx/type exception}
     nil {:fx/type :region}))
 
 (defn toolbar [{:keys [fx/context]}]
@@ -18,7 +28,8 @@
    :spacing 10
    :children [{:fx/type :button
                :text "Back"
-               :disable (fx/sub-ctx context subs/history-empty?)}
+               :disable (fx/sub-ctx context subs/history-empty?)
+               :on-action {:event/type ::events/go-back}}
               {:fx/type :text-field
                :h-box/hgrow :always
                :text (fx/sub-val context :typed-url)

@@ -17,18 +17,18 @@
      :history []}
     cache/lru-cache-factory)))
 
-(defn http-effect [v dispatch]
+(defn http-effect [v dispatch!]
   (try
     (http/request
      (-> v
          (assoc :async? true :as :byte-array)
          (dissoc :on-response :on-exception))
      (fn [response]
-       (prn response))
+       (dispatch! (assoc (:on-response v) :response response)))
      (fn [exception]
-       (prn exception)))
+       (dispatch! (assoc (:on-exception v) :exception exception))))
     (catch Exception e
-      (prn e))))
+      (dispatch! (assoc (:on-exception v) :exception e)))))
 
 (def event-handler
   (-> events/event-handler

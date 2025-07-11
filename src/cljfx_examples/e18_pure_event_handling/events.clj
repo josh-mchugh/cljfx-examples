@@ -36,3 +36,18 @@
             :on-exception {:event/type ::on-response
                            :request-id request-id
                            :result :failure}}}))
+
+(defmethod event-handler ::on-response [{:keys [fx/context request-id result response exception]}]
+  {:context (fx/swap-context context
+                             update-in [:request-id->response request-id]
+                             #(cond-> %
+                                :always (assoc :result result)
+                                (= :success result) (assoc :response response)
+                                (= :failure result) (assoc :exception exception)))})
+
+(defmethod event-handler ::go-back [{:keys [fx/context]}]
+  (let [new-active-request-id (peek (pop (fx/sub-val context :history)))
+        url (:url (fx/sub-ctx context subs/response-by-request-id new-active-request-id))]
+    {:context (fx/swap-context context #(-> %
+                                            (update :history pop)
+                                            (assoc :typed-url url)))}))
