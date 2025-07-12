@@ -17,9 +17,21 @@
                 {:fx/type :label
                  :text (or (ex-message exception) (str (class exception)))}]}))
 
+(defn result [{:keys [fx/context]}]
+  (let [request-id (fx/sub-ctx context subs/current-request-id)
+        content-type (fx/sub-ctx context subs/context-type request-id)
+        ^bytes body (fx/sub-ctx context subs/body request-id)]
+    (case content-type)
+    {:fx/type :scroll-pane
+     :fit-to-width true
+     :content {:fx/type :label
+               :wrap-text true
+               :text (str content-type ": " (String. body))}}))
+
 (defn current-page [{:keys [fx/context]}]
   (case (:result (fx/sub-ctx context subs/current-response))
     :pending {:fx/type loading}
+    :success {:fx/type result}
     :failure {:fx/type exception}
     nil {:fx/type :region}))
 
