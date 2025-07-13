@@ -1,7 +1,10 @@
 (ns cljfx-examples.e18-pure-event-handling.views
   (:require [cljfx.api :as fx]
             [cljfx-examples.e18-pure-event-handling.events :as events]
-            [cljfx-examples.e18-pure-event-handling.subs :as subs]))
+            [cljfx-examples.e18-pure-event-handling.subs :as subs]
+            [clojure.java.io :as io])
+  (:import [org.jsoup.nodes Element]
+           [org.jsoup Jsoup]))
 
 (defn- loading [_]
   {:fx/type :h-box
@@ -17,16 +20,41 @@
                 {:fx/type :label
                  :text (or (ex-message exception) (str (class exception)))}]}))
 
+(defn- jsoup->clj [^Element jsoup-el]
+  (let [attrs (into {}
+                    (map (fn [[k v]]
+                           [(keyword k) v]))
+                    (.attributes jsoup-el))]
+    {:tag (keyword (.tagName jsoup-el))
+     :attrs attrs
+     :children (mapv jsoup->clj (.children jsoup-el))}))
+
+(defn- ->tree-item [x]
+  {:fx/type :tree-item
+   :expanded true
+   :value x
+   :children (map ->tree-item (:children x))})
+
+(defn- html [{:keys [tree]}]
+  {:fx/type :tree-view
+   :cell-factory {:fx/cell-type :tree-cell
+                  :describe (fn [{:keys [tag attrs]}]
+                              {:text (str [tag attrs])})}
+   :root (->tree-item tree)})
+
 (defn result [{:keys [fx/context]}]
   (let [request-id (fx/sub-ctx context subs/current-request-id)
         content-type (fx/sub-ctx context subs/context-type request-id)
         ^bytes body (fx/sub-ctx context subs/body request-id)]
-    (case content-type)
-    {:fx/type :scroll-pane
-     :fit-to-width true
-     :content {:fx/type :label
-               :wrap-text true
-               :text (str content-type ": " (String. body))}}))
+    (case content-type
+      "text/html"
+      {:fx/type html
+       :tree (jsoup->clj (Jsoup/parse (String. body)))}
+      {:fx/type :scroll-pane
+       :fit-to-width true
+       :content {:fx/type :label
+                 :wrap-text true
+                 :text (str content-type ": " (String. body))}})))
 
 (defn current-page [{:keys [fx/context]}]
   (case (:result (fx/sub-ctx context subs/current-response))
