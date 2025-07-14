@@ -50,6 +50,23 @@
       "text/html"
       {:fx/type html
        :tree (jsoup->clj (Jsoup/parse (String. body)))}
+
+      "text/plain"
+      {:fx/type :scroll-pane
+       :fit-to-width true
+       :content {:fx/type :label
+                 :wrap-text true
+                 :text (String. body)}}
+
+      ("image/png" "image/jpeg")
+      {:fx/type :scroll-pane
+       :fit-to-width true
+       :fit-to-height true
+       :content {:fx/type :v-box
+                 :alignment :center
+                 :children [{:fx/type :image-view
+                             :image {:is (io/input-stream body)}}]}}
+
       {:fx/type :scroll-pane
        :fit-to-width true
        :content {:fx/type :label
