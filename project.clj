@@ -7,7 +7,9 @@
                  [org.clojure/core.cache "1.1.234"]
                  [cljfx "1.9.5"]
                  [org.jsoup/jsoup "1.11.3"]
-                 [clj-http/clj-http "3.9.1"]]
+                 [clj-http/clj-http "3.9.1"]
+                 [com.atlassian.commonmark/commonmark "0.12.1"]
+                 [de.codecentric.centerdevice/javafxsvg "1.3.0"]]
   :main ^:skip-aot cljfx-examples.core
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all
